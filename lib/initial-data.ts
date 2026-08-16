@@ -1,0 +1,245 @@
+import {
+  SchoolProfile,
+  Siswa,
+  Guru,
+  ArchiveItem,
+  SuratMutasiPayload,
+  SuratKeteranganPIPPayload,
+  SuratPenerimaanPindahanPayload,
+  SuratTugasPayload,
+  SuratAktifMengajarPayload,
+  SuratPembagianTugasPayload,
+  SuratPerjalananDinasPayload,
+  SuratKuasaPIPPayload,
+  SuratAktifBelajarPayload,
+} from '../types';
+
+export const DEFAULT_SCHOOL_PROFILE: SchoolProfile = {
+  pemerintah: '',
+  dinas: '',
+  cabangDinas: '',
+  namaSekolah: '',
+  npsn: '',
+  akreditasi: '',
+  alamat: '',
+  kelurahan: '',
+  kecamatan: '',
+  kota: '',
+  provinsi: '',
+  kodePos: '',
+  telepon: '',
+  email: '',
+  website: '',
+  namaKepsek: '',
+  nipKepsek: '',
+  pangkatKepsek: '',
+  jabatanKepsek: '',
+  showStempel: true,
+  showTTD: true,
+  showQRCode: false,
+  operatorAvatarUrl: '',
+  operatorBadge: 'Operator Sekolah',
+  operatorName: '',
+  operatorSubtitle: 'Admin Developer',
+  operatorChecklistTitle: 'ADMINISTRASI SEKOLAH',
+  operatorChecklistItems: ['Data Siswa', 'Surat & Arsip Digital'],
+};
+
+export const INITIAL_SISWA: Siswa[] = [];
+
+export const INITIAL_GURU: Guru[] = [];
+
+// Default form initial state payloads for all 9 letter types (Pre-filled with highly professional example datasets)
+export const DEFAULT_MUTASI_PAYLOAD: SuratMutasiPayload = {
+  nomorSurat: '',
+  sifat: 'Biasa',
+  lampiran: '',
+  perihal: 'Surat Keterangan Pindah Sekolah (Mutasi)',
+  namaSiswa: '',
+  nis: '',
+  nisn: '',
+  tempatTanggalLahir: '',
+  jenisKelamin: '',
+  kelas: '',
+  alamatSiswa: '',
+  desaSiswa: '',
+  kecamatanSiswa: '',
+  kabupatenSiswa: '',
+  namaOrangTua: '',
+  pekerjaanOrangTua: '',
+  alamatOrangTua: '',
+  desaOrangTua: '',
+  kecamatanOrangTua: '',
+  kabupatenOrangTua: '',
+  sekolahTujuan: '',
+  alamatSekolahTujuan: '',
+  desaSekolahTujuan: '',
+  kecamatanSekolahTujuan: '',
+  kabupatenSekolahTujuan: '',
+  alasanPindah: '',
+  tanggalPindah: '',
+  nomorRekomendasiDinas: '',
+  catatan: ''
+};
+
+export const DEFAULT_PIP_PAYLOAD: SuratKeteranganPIPPayload = {
+  nomorSurat: '',
+  namaSiswa: '',
+  nisn: '',
+  kelas: '',
+  tempatTanggalLahir: '',
+  namaOrangTua: '',
+  noRekeningPIP: '',
+  namaBank: '',
+  nominalBantuan: '',
+  tahunPelajaran: '',
+  tahunAnggaran: '',
+  keperluan: ''
+};
+
+export const DEFAULT_PENERIMAAN_PINDAHAN_PAYLOAD: SuratPenerimaanPindahanPayload = {
+  nomorSurat: '',
+  sifat: 'Penting',
+  lampiran: '-',
+  perihal: 'Surat Keterangan Diterima Sebagai Siswa Pindahan',
+  namaSiswa: '',
+  nisn: '',
+  kelasDiterima: '',
+  sekolahAsal: '',
+  alasanDiterima: '',
+  tanggalMulaiBelajar: '',
+  persyaratanStatus: ''
+};
+
+export const DEFAULT_SURAT_TUGAS_PAYLOAD: SuratTugasPayload = {
+  nomorSurat: '',
+  dasarTugas: '',
+  namaPetugas: '',
+  nipPetugas: '',
+  pangkatGolongan: '',
+  jabatan: '',
+  tujuanTugas: '',
+  tempatTugas: '',
+  tanggalMulai: '',
+  tanggalSelesai: '',
+  bebanBiaya: '',
+  keteranganLain: ''
+};
+
+export const DEFAULT_AKTIF_MENGAJAR_PAYLOAD: SuratAktifMengajarPayload = {
+  nomorSurat: '',
+  namaGuru: '',
+  nipGuru: '',
+  pangkatGolongan: '',
+  jabatan: '',
+  mataPelajaran: '',
+  jumlahJamMengajar: '',
+  semesterTahunAjar: '',
+  keperluan: ''
+};
+
+export const DEFAULT_PEMBAGIAN_TUGAS_PAYLOAD: SuratPembagianTugasPayload = {
+  nomorSK: '',
+  tentang: '',
+  tahunPelajaran: '',
+  semester: '',
+  customCityDate: '',
+  tanggalEfektif: '',
+  menimbang: [],
+  mengingat: [],
+  pertama: '',
+  kedua: 'Pembagian Tugas Mengajar dan Beban Kerja bagi setiap Guru tersebut tertuang dalam daftar terlampir dalam surat keputusan ini.',
+  ketiga: 'Apabila dikemudian hari ternyata terdapat kekeliruan dalam Keputusan ini, maka akan diadakan perbaikan sebagaimana mestinya.',
+  keempat: 'Keputusan ini berlaku sejak tanggal ditetapkan.',
+  daftarGuru: []
+};
+
+export const DEFAULT_PERJALANAN_DINAS_PAYLOAD: SuratPerjalananDinasPayload = {
+  nomorSPD: '',
+  pejabatPerintah: '',
+  namaPegawai: '',
+  nipPegawai: '',
+  pangkatGolongan: '',
+  jabatan: '',
+  gajiPokok: '',
+  tingkatPerjalanan: '',
+  maksudPerjalanan: '',
+  alatAngkutan: '',
+  tempatBerangkat: '',
+  tempatTujuan: '',
+  lamaPerjalanan: '',
+  tanggalBerangkat: '',
+  tanggalKembali: '',
+  pengikutText: '',
+  instansiPenanggungJawab: '',
+  akunAnggaran: '',
+  keteranganLain: '',
+  dikeluarkanDi: '',
+  tanggalDikeluarkan: '',
+  namaPemberiPerintah: '',
+  nipPemberiPerintah: '',
+  jabatanPemberiPerintah: '',
+  tibaKembaliDi: '',
+  sekretarisNama: '',
+  sekretarisNIP: '',
+  sekretarisJabatan: '',
+  catatanLain: '',
+  nomorPP: '',
+  tanggalPP: '',
+  belakangTibaTanggal: '',
+  belakangTibaDi: '',
+  belakangTibaPejabat: '',
+  belakangTibaNip: '',
+  belakangBerangkatTanggal: '',
+  belakangBerangkatKe: '',
+  belakangBerangkatPejabat: '',
+  belakangBerangkatNip: '',
+  belakangKembaliTanggal: '',
+  belakangKembaliPejabat: '',
+  belakangKembaliNip: '',
+  belakangPernyataanNama: '',
+  belakangPernyataanNip: '',
+  belakangPengesahanNama: '',
+  belakangPengesahanNip: ''
+};
+
+export const DEFAULT_KUASA_PIP_PAYLOAD: SuratKuasaPIPPayload = {
+  nomorSurat: '',
+  namaPemberi: '',
+  tempatLahirPemberi: '',
+  nikPemberi: '',
+  nisnSiswa: '',
+  kelasSiswa: '',
+  hubunganDenganSiswa: '',
+  alamatPemberi: '',
+  noHpPemberi: '',
+  namaPenerima: '',
+  tempatLahirPenerima: '',
+  nikPenerima: '',
+  nipPenerima: '',
+  jabatanPenerima: '',
+  alamatPenerima: '',
+  namaBank: '',
+  noRekening: '',
+  nominal: '',
+  keperluan: '',
+  namaSiswa: '',
+  namaSekolahSiswa: ''
+};
+
+export const DEFAULT_AKTIF_BELAJAR_PAYLOAD: SuratAktifBelajarPayload = {
+  nomorSurat: '',
+  namaSiswa: '',
+  nis: '',
+  nisn: '',
+  tempatTanggalLahir: '',
+  jenisKelamin: '',
+  kelas: '',
+  jurusan: '',
+  namaOrangTua: '',
+  alamatSiswa: '',
+  keperluan: '',
+  tahunPelajaran: ''
+};
+
+export const INITIAL_ARCHIVE: ArchiveItem[] = [];

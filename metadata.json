@@ -1,0 +1,6 @@
+{
+  "name": "APP Sistem Admintrasi Sekolah",
+  "description": "Aplikasi Administrasi Sekolah Modern dengan fitur cetak surat resmi (Mutasi, PIP, Tugas, SPD, Aktif Mengajar, Pembagian Tugas, Kuasa) berstandar Dinas Education.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

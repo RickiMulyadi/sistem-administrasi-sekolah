@@ -1,0 +1,254 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .font-times {
+    font-family: "Times New Roman", Times, "Liberation Serif", serif;
+  }
+
+  /* Enforce Times New Roman font style across ALL document previews and printable content */
+  .a4-paper,
+  .a4-paper *,
+  #printable-document,
+  #printable-document *,
+  #printable-berkas-ujian,
+  #printable-berkas-ujian *,
+  #printable-ppdb-document,
+  #printable-ppdb-document *,
+  #printable-mutasi-document,
+  #printable-mutasi-document * {
+    font-family: "Times New Roman", Times, "Liberation Serif", serif !important;
+  }
+
+  /* Luxurious 3D tactile buttons and depth cards */
+  .btn-3d-amber {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #d97706 100%);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .btn-3d-amber:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+  .btn-3d-amber:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+  }
+
+  .btn-3d-indigo {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #3730a3 100%);
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .btn-3d-indigo:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(79, 70, 229, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  .glass-card-3d {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .glass-card-3d:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.12), 0 8px 12px -4px rgba(15, 23, 42, 0.05);
+  }
+
+  .card-dark-3d {
+    background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+    box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Override default white browser autofill styling for dark inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #020617 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+  border-color: rgba(99, 102, 241, 0.6) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Custom scrollbar for modern admin UI */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* Print Specific Rules */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0mm;
+  }
+
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Reset body, html, main & all wrapper containers to allow multi-page print pagination */
+  html,
+  body,
+  main,
+  #root,
+  #__next,
+  div,
+  section,
+  article {
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    max-height: none !important;
+  }
+
+  html,
+  body,
+  main,
+  #root,
+  #__next {
+    display: block !important;
+    position: static !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Hide screen UI elements */
+  .no-print,
+  nav,
+  header,
+  aside,
+  footer,
+  button,
+  .toast {
+    display: none !important;
+  }
+
+  /* Reset preview wrapper grid layout during print */
+  .lg\:col-span-7,
+  .lg\:col-span-12 {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Ensure printable containers display cleanly on pure white A4 sheet and allow pagination */
+  #printable-document,
+  #printable-berkas-ujian,
+  #printable-ppdb-document,
+  #printable-mutasi-document,
+  .a4-paper {
+    display: block !important;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
+    margin: 0 auto !important;
+    padding: 8mm 12mm 8mm 12mm !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    border: none !important;
+    outline: none !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  /* Preserve explicit document table borders and kop surat lines ONLY */
+  table, tr, td, th, .kop-line-thick, .kop-line-thin, .kop-border-double {
+    border-color: #000000 !important;
+  }
+
+  /* Prevent page breaks inside critical elements */
+  tr, td, th, img, table, .signature-block, .kop-header {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Explicit page breaks for multi-page documents (SK Pembagian Tugas & SPPD) */
+  .break-before-page,
+  [style*="page-break-before"],
+  [style*="pageBreakBefore"] {
+    display: block !important;
+    position: relative !important;
+    page-break-before: always !important;
+    break-before: page !important;
+    clear: both !important;
+    padding-top: 10mm !important;
+    margin-top: 0 !important;
+  }
+
+}
+
+/* A4 Sheet styling for screen preview */
+.a4-paper {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 10mm 18mm 18mm 18mm;
+  margin: 0 auto;
+  background: #ffffff;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  font-family: "Times New Roman", Times, serif;
+  color: #000000;
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1024px) {
+  .a4-paper-responsive {
+    width: 100%;
+    min-height: auto;
+    padding: 1.25rem;
+  }
+}
+
+/* Kop Surat double line border */
+.kop-border-double {
+  border-bottom: 3px double #000000;
+}
+.kop-line-thick {
+  border-bottom: 3px solid #000000;
+}
+.kop-line-thin {
+  border-bottom: 1px solid #000000;
+}
+
