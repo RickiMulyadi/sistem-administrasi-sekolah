@@ -557,6 +557,7 @@ export function saveUserAccounts(accounts: UserAccount[]): void {
   if (!isClient()) return;
   try {
     trySetItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(accounts));
+    pushServerSync();
   } catch (e) {
     console.error('Failed to save user accounts', e);
   }
@@ -751,7 +752,175 @@ export function saveDeveloperBg(bgUrl: string): void {
     }
 
     window.dispatchEvent(new CustomEvent('developer-bg-saved', { detail: bgUrl }));
+    pushServerSync();
   } catch (e) {
     console.error('Failed to save developer bg', e);
   }
 }
+
+/**
+ * Pushes the latest developer database & accounts to the server API
+ * Ensures data is available in other browsers and devices.
+ */
+export async function pushServerSync(): Promise<void> {
+  if (!isClient()) return;
+  try {
+    const accounts = getUserAccounts();
+    const resetRequests = getPasswordResetRequests();
+    const developerBg = getDeveloperBg();
+
+    await fetch('/api/developer/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        accounts,
+        resetRequests,
+        developerBg,
+      }),
+    });
+  } catch (err) {
+    // Non-blocking background sync error
+    console.warn('Background server sync skipped (offline or network error):', err);
+  }
+}
+
+/**
+ * Initializes and pulls developer database from server API on application load.
+ */
+export async function initServerSync(): Promise<void> {
+  if (!isClient()) return;
+  try {
+    const res = await fetch('/api/developer/sync');
+    if (!res.ok) return;
+    const json = await res.json();
+    if (json && json.success && json.data) {
+      const { accounts, resetRequests, developerBg } = json.data;
+      
+      if (Array.isArray(accounts) && accounts.length > 0) {
+        const localAccounts = getUserAccounts();
+        // Merge without duplicating
+        const merged = [...localAccounts];
+        accounts.forEach((serverAcc: UserAccount) => {
+          const exists = merged.find(
+            (a) => a.username.toLowerCase() === serverAcc.username.toLowerCase() && a.role === serverAcc.role
+          );
+          if (!exists) {
+            merged.push(serverAcc);
+          }
+        });
+        saveUserAccounts(merged);
+      }
+
+      if (Array.isArray(resetRequests) && resetRequests.length > 0) {
+        const localRequests = getPasswordResetRequests();
+        const mergedReqs = [...localRequests];
+        resetRequests.forEach((serverReq: PasswordResetRequest) => {
+          if (!mergedReqs.some((r) => r.id === serverReq.id)) {
+            mergedReqs.push(serverReq);
+          }
+        });
+        savePasswordResetRequests(mergedReqs);
+      }
+
+      if (developerBg && typeof developerBg === 'string' && developerBg.trim()) {
+        const currentBg = localStorage.getItem(STORAGE_KEYS.DEVELOPER_BG);
+        if (!currentBg) {
+          trySetItem(STORAGE_KEYS.DEVELOPER_BG, developerBg);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Could not sync with server on boot:', err);
+  }
+}
+
+/**
+ * Exports complete database to a downloadable JSON file for manual backup.
+ */
+export function exportDatabaseBackup(): void {
+  if (!isClient()) return;
+  try {
+    const accounts = getUserAccounts();
+    const resetRequests = getPasswordResetRequests();
+    const developerBg = getDeveloperBg();
+    const profile = getSchoolProfile();
+
+    const backupData = {
+      version: '3.0',
+      exportedAt: new Date().toISOString(),
+      appName: 'Sistem Administrasi Sekolah & Manajemen Surat',
+      accounts,
+      resetRequests,
+      developerBg,
+      schoolProfile: profile,
+    };
+
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_database_sekolah_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error('Failed to export database backup', e);
+  }
+}
+
+/**
+ * Imports database from a JSON file and restores all accounts and settings.
+ */
+export function importDatabaseBackup(jsonString: string): { success: boolean; message: string; count: number } {
+  if (!isClient()) return { success: false, message: 'Client runtime not available', count: 0 };
+  try {
+    const parsed = JSON.parse(jsonString);
+    if (!parsed || typeof parsed !== 'object') {
+      return { success: false, message: 'Format file backup tidak valid.', count: 0 };
+    }
+
+    let importedCount = 0;
+    if (Array.isArray(parsed.accounts)) {
+      const current = getUserAccounts();
+      const merged = [...current];
+      parsed.accounts.forEach((acc: UserAccount) => {
+        if (acc && acc.username) {
+          const idx = merged.findIndex(
+            (m) => m.username.toLowerCase() === acc.username.toLowerCase() && m.role === acc.role
+          );
+          if (idx >= 0) {
+            merged[idx] = acc;
+          } else {
+            merged.push(acc);
+          }
+          importedCount++;
+        }
+      });
+      saveUserAccounts(merged);
+    }
+
+    if (Array.isArray(parsed.resetRequests)) {
+      savePasswordResetRequests(parsed.resetRequests);
+    }
+
+    if (parsed.developerBg && typeof parsed.developerBg === 'string') {
+      saveDeveloperBg(parsed.developerBg);
+    }
+
+    if (parsed.schoolProfile && typeof parsed.schoolProfile === 'object') {
+      saveSchoolProfile(parsed.schoolProfile);
+    }
+
+    pushServerSync();
+
+    return {
+      success: true,
+      message: `Berhasil memulihkan ${importedCount} data akun sekolah dan konfigurasi developer!`,
+      count: importedCount,
+    };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Gagal memproses file backup', count: 0 };
+  }
+}
+

@@ -13,6 +13,9 @@ import {
   markPasswordResetResolved,
   deletePasswordResetRequest,
   resetUserAccountToDefault,
+  exportDatabaseBackup,
+  importDatabaseBackup,
+  pushServerSync,
 } from '../lib/storage';
 import { compressImageFile, compressWallpaperFile } from '../lib/utils';
 import {
@@ -50,6 +53,9 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
+  Download,
+  Upload,
+  Database,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { showToast } from '../lib/toast';
@@ -598,6 +604,47 @@ export const DeveloperPage: React.FC<DeveloperPageProps> = ({
     const updated = getPasswordResetRequests();
     setResetRequests(updated);
     showToast('Permintaan reset berhasil dihapus dari daftar.', 'info', 'Dihapus');
+  };
+
+  // Export database backup to JSON file
+  const handleExportBackup = () => {
+    exportDatabaseBackup();
+    showToast('File backup database (.json) berhasil diunduh ke komputer Anda!', 'success', 'Backup Berhasil');
+  };
+
+  // Import database backup from JSON file
+  const handleImportBackupFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (!content) return;
+      const res = importDatabaseBackup(content);
+      if (res.success) {
+        const updatedAccounts = getUserAccounts();
+        setAccounts(updatedAccounts);
+        const updatedReqs = getPasswordResetRequests();
+        setResetRequests(updatedReqs);
+        setDevBgUrl(getDeveloperBg());
+        showToast(res.message, 'success', 'Sinkronisasi Selesai');
+      } else {
+        showToast(res.message, 'error', 'Gagal Memulihkan');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  // Manual Push Sync to Server API
+  const handleManualServerSync = async () => {
+    try {
+      await pushServerSync();
+      showToast('Database berhasil disinkronkan ke server cloud!', 'success', 'Sinkronisasi Cloud Berhasil');
+    } catch {
+      showToast('Gagal menyinkronkan ke server.', 'error', 'Sinkronisasi Gagal');
+    }
   };
 
   // Generate random avatar for developer settings
@@ -1246,7 +1293,7 @@ export const DeveloperPage: React.FC<DeveloperPageProps> = ({
               className="bg-slate-900/40 border-2 border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col justify-between h-full min-h-[500px] w-full"
             >
               <div>
-                <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-4 mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border-2 border-purple-500/20 text-purple-400 shadow-md">
                       <ShieldCheck className="w-5 h-5" />
@@ -1256,13 +1303,58 @@ export const DeveloperPage: React.FC<DeveloperPageProps> = ({
                         Database Akun
                       </h2>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                        Daftar Akses Terdaftar
+                        Daftar Akses Terdaftar • Sinkronisasi Antar Browser
                       </p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-black bg-slate-950 border-2 border-slate-800 px-3 py-1.5 rounded-xl text-amber-400">
-                    {accounts.length} Akun
-                  </span>
+
+                  {/* Actions & Backup Controls */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Manual Server Sync */}
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      type="button"
+                      onClick={handleManualServerSync}
+                      className="px-3 py-1.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30 hover:border-indigo-400 text-indigo-300 hover:text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-sm"
+                      title="Sinkronkan database ke server sekarang"
+                    >
+                      <Database className="w-3.5 h-3.5 text-indigo-400" />
+                      <span className="hidden sm:inline">Sinkron Cloud</span>
+                    </motion.button>
+
+                    {/* Export Backup JSON */}
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      type="button"
+                      onClick={handleExportBackup}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 hover:border-emerald-400 text-emerald-300 hover:text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-sm"
+                      title="Download file backup database (.json) untuk dipindahkan ke browser/komputer lain"
+                    >
+                      <Download className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Backup JSON</span>
+                    </motion.button>
+
+                    {/* Import Restore Backup JSON */}
+                    <label
+                      className="px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 hover:border-amber-400 text-amber-300 hover:text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-sm"
+                      title="Pulihkan database dari file backup .json"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Pulihkan / Impor</span>
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={handleImportBackupFile}
+                        className="hidden"
+                      />
+                    </label>
+
+                    <span className="text-[10px] font-black bg-slate-950 border-2 border-slate-800 px-3 py-1.5 rounded-xl text-amber-400">
+                      {accounts.length} Akun
+                    </span>
+                  </div>
                 </div>
 
                 {/* Interactive List Scrollbox */}

@@ -47,6 +47,7 @@ import {
   saveCurrentTab,
   clearCurrentTab,
   getDeveloperBg,
+  initServerSync,
 } from '@/lib/storage';
 
 import {
@@ -144,6 +145,7 @@ export default function SchoolAdminApp() {
 
   React.useEffect(() => {
     setMounted(true);
+    initServerSync();
   }, []);
 
   const isClientLoaded = isSyncClient || mounted;
