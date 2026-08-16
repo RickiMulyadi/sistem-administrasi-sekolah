@@ -557,7 +557,8 @@ export function saveUserAccounts(accounts: UserAccount[]): void {
   if (!isClient()) return;
   try {
     trySetItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(accounts));
-    pushServerSync();
+    // Automatically sync to server in background
+    pushDeveloperDataToServer().catch(() => {});
   } catch (e) {
     console.error('Failed to save user accounts', e);
   }
@@ -657,6 +658,7 @@ export function savePasswordResetRequests(requests: PasswordResetRequest[]): voi
   try {
     trySetItem(STORAGE_KEYS.RESET_REQUESTS, JSON.stringify(requests));
     window.dispatchEvent(new CustomEvent('password-reset-request-updated', { detail: requests }));
+    pushDeveloperDataToServer().catch(() => {});
   } catch (e) {
     console.error('Failed to save reset requests', e);
   }
@@ -752,175 +754,117 @@ export function saveDeveloperBg(bgUrl: string): void {
     }
 
     window.dispatchEvent(new CustomEvent('developer-bg-saved', { detail: bgUrl }));
-    pushServerSync();
+    pushDeveloperDataToServer().catch(() => {});
   } catch (e) {
     console.error('Failed to save developer bg', e);
   }
 }
 
 /**
- * Pushes the latest developer database & accounts to the server API
- * Ensures data is available in other browsers and devices.
+ * Otomatis mengirim seluruh state Developer ke server pusat
  */
-export async function pushServerSync(): Promise<void> {
-  if (!isClient()) return;
+export async function pushDeveloperDataToServer(): Promise<boolean> {
+  if (!isClient()) return false;
   try {
     const accounts = getUserAccounts();
-    const resetRequests = getPasswordResetRequests();
     const developerBg = getDeveloperBg();
+    const resetRequests = getPasswordResetRequests();
+    const devAcc = accounts.find((a) => a.username === 'developer');
 
-    await fetch('/api/developer/sync', {
+    const payload = {
+      accounts,
+      developerBg,
+      resetRequests,
+      developerProfile: devAcc
+        ? {
+            namaLengkap: devAcc.namaLengkap,
+            password: devAcc.password,
+            avatarUrl: devAcc.avatarUrl,
+          }
+        : undefined,
+    };
+
+    const res = await fetch('/api/developer/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        accounts,
-        resetRequests,
-        developerBg,
-      }),
+      body: JSON.stringify(payload),
     });
+
+    if (res.ok) {
+      console.log('Developer state synced to server successfully!');
+      return true;
+    }
   } catch (err) {
-    // Non-blocking background sync error
-    console.warn('Background server sync skipped (offline or network error):', err);
+    console.warn('Developer cloud sync push fallback:', err);
   }
+  return false;
 }
 
 /**
- * Initializes and pulls developer database from server API on application load.
+ * Otomatis menarik seluruh state Developer terbaru dari server saat dibuka di browser/Google akun mana pun
  */
-export async function initServerSync(): Promise<void> {
-  if (!isClient()) return;
+export async function syncDeveloperDataFromServer(): Promise<boolean> {
+  if (!isClient()) return false;
   try {
     const res = await fetch('/api/developer/sync');
-    if (!res.ok) return;
+    if (!res.ok) return false;
     const json = await res.json();
-    if (json && json.success && json.data) {
-      const { accounts, resetRequests, developerBg } = json.data;
-      
-      if (Array.isArray(accounts) && accounts.length > 0) {
-        const localAccounts = getUserAccounts();
-        // Merge without duplicating
-        const merged = [...localAccounts];
-        accounts.forEach((serverAcc: UserAccount) => {
-          const exists = merged.find(
-            (a) => a.username.toLowerCase() === serverAcc.username.toLowerCase() && a.role === serverAcc.role
-          );
-          if (!exists) {
-            merged.push(serverAcc);
-          }
-        });
-        saveUserAccounts(merged);
-      }
+    if (!json.success || !json.data) return false;
 
-      if (Array.isArray(resetRequests) && resetRequests.length > 0) {
-        const localRequests = getPasswordResetRequests();
-        const mergedReqs = [...localRequests];
-        resetRequests.forEach((serverReq: PasswordResetRequest) => {
-          if (!mergedReqs.some((r) => r.id === serverReq.id)) {
-            mergedReqs.push(serverReq);
-          }
-        });
-        savePasswordResetRequests(mergedReqs);
-      }
+    const data = json.data;
 
-      if (developerBg && typeof developerBg === 'string' && developerBg.trim()) {
-        const currentBg = localStorage.getItem(STORAGE_KEYS.DEVELOPER_BG);
-        if (!currentBg) {
-          trySetItem(STORAGE_KEYS.DEVELOPER_BG, developerBg);
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('Could not sync with server on boot:', err);
-  }
-}
-
-/**
- * Exports complete database to a downloadable JSON file for manual backup.
- */
-export function exportDatabaseBackup(): void {
-  if (!isClient()) return;
-  try {
-    const accounts = getUserAccounts();
-    const resetRequests = getPasswordResetRequests();
-    const developerBg = getDeveloperBg();
-    const profile = getSchoolProfile();
-
-    const backupData = {
-      version: '3.0',
-      exportedAt: new Date().toISOString(),
-      appName: 'Sistem Administrasi Sekolah & Manajemen Surat',
-      accounts,
-      resetRequests,
-      developerBg,
-      schoolProfile: profile,
-    };
-
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `backup_database_sekolah_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  } catch (e) {
-    console.error('Failed to export database backup', e);
-  }
-}
-
-/**
- * Imports database from a JSON file and restores all accounts and settings.
- */
-export function importDatabaseBackup(jsonString: string): { success: boolean; message: string; count: number } {
-  if (!isClient()) return { success: false, message: 'Client runtime not available', count: 0 };
-  try {
-    const parsed = JSON.parse(jsonString);
-    if (!parsed || typeof parsed !== 'object') {
-      return { success: false, message: 'Format file backup tidak valid.', count: 0 };
+    // 1. Sync developer background wallpaper
+    if (data.developerBg) {
+      trySetItem(STORAGE_KEYS.DEVELOPER_BG, data.developerBg);
+      window.dispatchEvent(new CustomEvent('developer-bg-saved', { detail: data.developerBg }));
     }
 
-    let importedCount = 0;
-    if (Array.isArray(parsed.accounts)) {
-      const current = getUserAccounts();
-      const merged = [...current];
-      parsed.accounts.forEach((acc: UserAccount) => {
+    // 2. Sync accounts list & developer credentials
+    if (Array.isArray(data.accounts) && data.accounts.length > 0) {
+      const currentAccounts = getUserAccounts();
+      const mergedMap = new Map<string, UserAccount>();
+
+      // Put server accounts
+      data.accounts.forEach((acc: UserAccount) => {
         if (acc && acc.username) {
-          const idx = merged.findIndex(
-            (m) => m.username.toLowerCase() === acc.username.toLowerCase() && m.role === acc.role
-          );
-          if (idx >= 0) {
-            merged[idx] = acc;
-          } else {
-            merged.push(acc);
-          }
-          importedCount++;
+          mergedMap.set(acc.username.toLowerCase(), acc);
         }
       });
-      saveUserAccounts(merged);
+
+      // Put local accounts that might be newer
+      currentAccounts.forEach((acc) => {
+        if (acc && acc.username && !mergedMap.has(acc.username.toLowerCase())) {
+          mergedMap.set(acc.username.toLowerCase(), acc);
+        }
+      });
+
+      const mergedList = Array.from(mergedMap.values());
+      trySetItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(mergedList));
     }
 
-    if (Array.isArray(parsed.resetRequests)) {
-      savePasswordResetRequests(parsed.resetRequests);
+    // 3. Sync reset requests
+    if (Array.isArray(data.resetRequests)) {
+      trySetItem(STORAGE_KEYS.RESET_REQUESTS, JSON.stringify(data.resetRequests));
+      window.dispatchEvent(new CustomEvent('password-reset-request-updated', { detail: data.resetRequests }));
     }
 
-    if (parsed.developerBg && typeof parsed.developerBg === 'string') {
-      saveDeveloperBg(parsed.developerBg);
+    // 4. If developer profile exists, sync active session if currently developer
+    if (data.developerProfile) {
+      const session = getUserSession();
+      if (session && (session.username === 'developer' || session.role === 'Developer')) {
+        const updatedSession: UserSession = {
+          ...session,
+          namaLengkap: data.developerProfile.namaLengkap || session.namaLengkap,
+          avatarUrl: data.developerProfile.avatarUrl || session.avatarUrl,
+        };
+        saveUserSession(updatedSession);
+      }
     }
 
-    if (parsed.schoolProfile && typeof parsed.schoolProfile === 'object') {
-      saveSchoolProfile(parsed.schoolProfile);
-    }
-
-    pushServerSync();
-
-    return {
-      success: true,
-      message: `Berhasil memulihkan ${importedCount} data akun sekolah dan konfigurasi developer!`,
-      count: importedCount,
-    };
-  } catch (err: any) {
-    return { success: false, message: err.message || 'Gagal memproses file backup', count: 0 };
+    return true;
+  } catch (err) {
+    console.warn('Server sync not reachable, using local storage state:', err);
   }
+  return false;
 }
 

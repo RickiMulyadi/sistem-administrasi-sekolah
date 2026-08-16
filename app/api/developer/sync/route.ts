@@ -2,18 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-// Local storage path for persistent server database
-const DATA_DIR = path.join(process.cwd(), 'data');
-const DATA_FILE = path.join(DATA_DIR, 'developer-database.json');
-
-// Default in-memory cache
-let inMemoryDatabase: {
+export interface DeveloperSyncPayload {
   accounts?: any[];
-  profiles?: Record<string, any>;
-  resetRequests?: any[];
+  developerProfile?: {
+    namaLengkap: string;
+    password?: string;
+    avatarUrl?: string;
+  };
   developerBg?: string;
-  lastUpdated?: string;
-} = {
+  resetRequests?: any[];
+  schoolProfiles?: Record<string, any>;
+  lastSyncedAt?: string;
+}
+
+// In-memory fallback
+let inMemoryData: DeveloperSyncPayload = {
   accounts: [
     {
       username: 'developer',
@@ -25,80 +28,105 @@ let inMemoryDatabase: {
       jabatan: 'Admin Developer',
     },
   ],
-  profiles: {},
-  resetRequests: [],
+  developerProfile: {
+    namaLengkap: 'Admin Developer',
+    password: '23011995',
+    avatarUrl: 'https://picsum.photos/seed/developer-avatar/150/150',
+  },
   developerBg: '/login-operator-bg.jpg',
-  lastUpdated: new Date().toISOString(),
+  resetRequests: [],
+  schoolProfiles: {},
+  lastSyncedAt: new Date().toISOString(),
 };
 
-// Helper to ensure data directory exists and load file
-function loadDatabaseFromFile() {
+function getStorageFilePath(): string {
+  const primaryDir = path.join(process.cwd(), 'data');
   try {
-    if (fs.existsSync(DATA_FILE)) {
-      const content = fs.readFileSync(DATA_FILE, 'utf8');
-      if (content.trim()) {
-        const parsed = JSON.parse(content);
-        inMemoryDatabase = { ...inMemoryDatabase, ...parsed };
-      }
+    if (!fs.existsSync(primaryDir)) {
+      fs.mkdirSync(primaryDir, { recursive: true });
     }
-  } catch (err) {
-    console.warn('Could not read persistent database file, using in-memory cache:', err);
+    return path.join(primaryDir, 'developer-sync.json');
+  } catch {
+    const tmpDir = path.join('/tmp', 'admin-sekolah-data');
+    if (!fs.existsSync(tmpDir)) {
+      try {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      } catch {}
+    }
+    return path.join(tmpDir, 'developer-sync.json');
   }
 }
 
-// Helper to save database to file
-function saveDatabaseToFile(data: any) {
+function readStoredData(): DeveloperSyncPayload {
   try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
+    const filePath = getStorageFilePath();
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      const parsed = JSON.parse(content);
+      inMemoryData = { ...inMemoryData, ...parsed };
+      return inMemoryData;
     }
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
   } catch (err) {
-    console.warn('Could not write persistent database file (likely serverless readonly):', err);
+    console.error('Error reading developer sync file, using in-memory cache:', err);
   }
+  return inMemoryData;
 }
 
-// Initialize on module load
-loadDatabaseFromFile();
+function writeStoredData(data: DeveloperSyncPayload): void {
+  try {
+    inMemoryData = {
+      ...inMemoryData,
+      ...data,
+      lastSyncedAt: new Date().toISOString(),
+    };
+    const filePath = getStorageFilePath();
+    fs.writeFileSync(filePath, JSON.stringify(inMemoryData, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error writing developer sync file:', err);
+  }
+}
 
 export async function GET() {
-  try {
-    loadDatabaseFromFile();
-    return NextResponse.json({
-      success: true,
-      data: inMemoryDatabase,
-    });
-  } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message || 'Gagal memuat database developer' },
-      { status: 500 }
-    );
-  }
+  const data = readStoredData();
+  return NextResponse.json({
+    success: true,
+    data,
+    timestamp: new Date().toISOString(),
+  });
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const payload = await req.json();
-    
-    // Merge received data
-    const updatedData = {
-      ...inMemoryDatabase,
-      ...payload,
-      lastUpdated: new Date().toISOString(),
+    const body = (await req.json()) as Partial<DeveloperSyncPayload>;
+    const current = readStoredData();
+
+    const merged: DeveloperSyncPayload = {
+      ...current,
+      ...body,
+      accounts: body.accounts || current.accounts,
+      developerProfile: body.developerProfile
+        ? { ...current.developerProfile, ...body.developerProfile }
+        : current.developerProfile,
+      developerBg: body.developerBg !== undefined ? body.developerBg : current.developerBg,
+      resetRequests: body.resetRequests || current.resetRequests,
+      schoolProfiles: body.schoolProfiles
+        ? { ...current.schoolProfiles, ...body.schoolProfiles }
+        : current.schoolProfiles,
+      lastSyncedAt: new Date().toISOString(),
     };
 
-    inMemoryDatabase = updatedData;
-    saveDatabaseToFile(updatedData);
+    writeStoredData(merged);
 
     return NextResponse.json({
       success: true,
-      message: 'Database berhasil disinkronkan ke server secara permanen!',
-      data: updatedData,
+      message: 'Data developer berhasil disinkronisasi ke server pusat!',
+      data: merged,
+      timestamp: merged.lastSyncedAt,
     });
-  } catch (error: any) {
-    console.error('Error syncing developer database:', error);
+  } catch (err: any) {
+    console.error('Failed to sync developer data:', err);
     return NextResponse.json(
-      { success: false, error: error.message || 'Gagal menyimpan sinkronisasi database' },
+      { success: false, error: err?.message || 'Failed to sync data' },
       { status: 500 }
     );
   }

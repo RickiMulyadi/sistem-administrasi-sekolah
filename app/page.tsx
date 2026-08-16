@@ -47,7 +47,8 @@ import {
   saveCurrentTab,
   clearCurrentTab,
   getDeveloperBg,
-  initServerSync,
+  syncDeveloperDataFromServer,
+  pushDeveloperDataToServer,
 } from '@/lib/storage';
 
 import {
@@ -145,7 +146,8 @@ export default function SchoolAdminApp() {
 
   React.useEffect(() => {
     setMounted(true);
-    initServerSync();
+    // Otomatis tarik data & foto terbaru Developer dari server pusat untuk sinkronisasi lintas browser & perangkat
+    syncDeveloperDataFromServer().catch(() => {});
   }, []);
 
   const isClientLoaded = isSyncClient || mounted;
