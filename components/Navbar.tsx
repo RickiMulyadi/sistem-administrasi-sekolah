@@ -32,6 +32,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCreateModal,
   activeViewTitle,
 }) => {
+  const [logoHasError, setLogoHasError] = React.useState(false);
+  const isDeveloper = session?.role === 'Developer' || currentTab === 'developer';
+
   return (
     <header className="no-print bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 text-white sticky top-0 z-30 shadow-xl">
       {/* Metallic Gold Top Accent Line */}
@@ -49,15 +52,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           <div className="flex items-center gap-3">
-            {currentTab === 'developer' ? (
-              <div className="w-10 h-10 rounded-xl bg-slate-950 flex items-center justify-center shadow-lg border border-rose-500/30 shadow-rose-500/5 transform hover:scale-105 transition-transform shrink-0 p-1">
-                <Terminal className="w-5 h-5 text-rose-400" />
+            {isDeveloper ? (
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 flex items-center justify-center shadow-lg border border-indigo-400/40 shadow-indigo-500/20 transform hover:scale-105 transition-transform shrink-0 p-1.5">
+                <Terminal className="w-5 h-5 text-indigo-300 drop-shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
               </div>
-            ) : (profile?.logoRightUrl || profile?.logoLeftUrl) ? (
+            ) : (!logoHasError && (profile?.logoRightUrl || profile?.logoLeftUrl)) ? (
               <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center shadow-lg border border-amber-400/30 overflow-hidden transform hover:scale-105 transition-transform shrink-0 p-1">
                 <img
                   src={profile.logoRightUrl || profile.logoLeftUrl}
                   alt="Logo Sekolah"
+                  onError={() => setLogoHasError(true)}
                   className="w-full h-full object-contain"
                   referrerPolicy="no-referrer"
                 />
@@ -103,7 +107,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
             <div>
               <h1 className="text-sm sm:text-base font-extrabold text-white tracking-tight leading-none drop-shadow-xs">
-                {currentTab === 'developer' ? 'Developer Studio' : 'Sistem Administrasi Sekolah'}
+                {isDeveloper ? 'Developer Studio' : 'Sistem Administrasi Sekolah'}
               </h1>
               <p className="text-[11px] text-amber-300/90 font-semibold leading-tight mt-1 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
