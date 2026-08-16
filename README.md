@@ -46,18 +46,17 @@
 
 ---
 
-## 🔑 Akun Default & Hak Akses
-
-Semua akun sekolah menggunakan password default: **`123`**
-
-| Satuan Pendidikan | Akun Admin TU | Akun Kepala Sekolah | Akun Operator PIP | Akun Guru |
-| :--- | :--- | :--- | :--- | :--- |
-| **SDN 2 Nyomplong** | `admin.nyomplong` | `kepsek.nyomplong` | `operator.nyomplong` | `guru.nyomplong` |
-| **SDN Margaasih** | `admin.tu` | `kepsek` | `operator.pip` | `guru` |
-| **SDN 1 Sukaraja** | `admin.sukaraja` | `kepsek.sukaraja` | `operator.sukaraja` | - |
-| **SDN Cikole 1** | `admin.cikole` | `kepsek.cikole` | - | - |
-| **SMPN 1 Sukabumi** | `admin.smpn1` | `kepsek.smpn1` | - | - |
-| **Developer Studio** | `developer` (*Password: `23011995`*) | - | - | - |
+## 🔑 Akun Sistem Utama (Developer Studio)
+ 
+Secara bawaan (*clean installation*), hanya akun **Developer** yang aktif:
+ 
+- **Username**: `developer`
+- **Password**: `23011995`
+- **Role**: `Developer`
+- **Fungsi**: Akses Studio Pengembang untuk membuat akun sekolah baru, mengelola database seluruh sekolah, dan mereset kata sandi akun sekolah.
+ 
+> **Catatan Pembuatan Akun Baru:**  
+> Untuk menambahkan akun sekolah baru (Kepala Sekolah, Admin TU, Operator PIP, Guru), silakan masuk sebagai `developer` lalu buka menu **"Buat Akun Sekolah"**. Akun yang dibuat akan otomatis memiliki partisi database mandiri berdasarkan NPSN.
 
 ---
 

@@ -482,7 +482,6 @@ export function clearUserSession(): void {
 }
 
 export const DEFAULT_ACCOUNTS: UserAccount[] = [
-  ...SEED_SCHOOLS.flatMap((s) => s.accounts),
   {
     username: 'developer',
     namaLengkap: 'Admin Developer',
@@ -494,28 +493,39 @@ export const DEFAULT_ACCOUNTS: UserAccount[] = [
   },
 ];
 
+// List of all legacy demo accounts to automatically purge from localStorage
+const DEMO_ACCOUNT_USERNAMES = new Set([
+  'admin.nyomplong',
+  'kepsek.nyomplong',
+  'operator.nyomplong',
+  'guru.nyomplong',
+  'admin.tu',
+  'kepsek',
+  'operator.pip',
+  'guru',
+  'admin.sukaraja',
+  'kepsek.sukaraja',
+  'operator.sukaraja',
+  'admin.cikole',
+  'kepsek.cikole',
+  'admin.smpn1',
+  'kepsek.smpn1',
+  'super.admin',
+]);
+
 export function getUserAccounts(): UserAccount[] {
   if (!isClient()) return DEFAULT_ACCOUNTS;
   try {
     const data = localStorage.getItem(STORAGE_KEYS.ACCOUNTS);
     if (data) {
       const parsed = JSON.parse(data) as UserAccount[];
-      // Filter out legacy super.admin and Super Admin roles
+      // Filter out all demo accounts and legacy super.admin
       const filtered = (parsed as any[]).filter(
-        (acc) => acc.username !== 'super.admin' && acc.role !== 'Super Admin'
+        (acc) =>
+          !DEMO_ACCOUNT_USERNAMES.has(acc.username?.trim().toLowerCase()) &&
+          acc.username !== 'super.admin' &&
+          acc.role !== 'Super Admin'
       ) as UserAccount[];
-
-      // Merge any missing seed school accounts
-      SEED_SCHOOLS.forEach((seedSchool) => {
-        seedSchool.accounts.forEach((seedAcc) => {
-          const exists = filtered.find(
-            (a) => a.username.toLowerCase() === seedAcc.username.toLowerCase()
-          );
-          if (!exists) {
-            filtered.push(seedAcc);
-          }
-        });
-      });
       
       const developerAcc = filtered.find((acc) => acc.username === 'developer');
       if (!developerAcc) {
